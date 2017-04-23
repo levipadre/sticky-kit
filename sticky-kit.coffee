@@ -1,12 +1,10 @@
 ###*
-@license Sticky-kit v1.1.4 | MIT | Leaf Corcoran 2015 | http://leafo.net
+@license Sticky-kit v1.1.1 | WTFPL | Leaf Corcoran 2014 | http://leafo.net
 ###
 
-$ = window.jQuery
+$ = @jQuery or window.jQuery
 
 win = $ window
-doc = $ document
-
 $.fn.stick_in_parent = (opts={}) ->
   {
     sticky_class
@@ -18,9 +16,6 @@ $.fn.stick_in_parent = (opts={}) ->
     bottoming: enable_bottoming
   } = opts
 
-  win_height = win.height()
-  doc_height = doc.height()
-
   offset_top ?= 0
   parent_selector ?= undefined
   inner_scrolling ?= true
@@ -28,26 +23,10 @@ $.fn.stick_in_parent = (opts={}) ->
 
   enable_bottoming = true unless enable_bottoming?
 
-  # we need this because jquery's version (along with css()) rounds everything
-  outer_width = (el) ->
-    if window.getComputedStyle
-      _el = el[0]
-      computed = window.getComputedStyle el[0]
-
-      w = parseFloat(computed.getPropertyValue("width")) + parseFloat(computed.getPropertyValue("margin-left")) + parseFloat(computed.getPropertyValue("margin-right"))
-
-      if computed.getPropertyValue("box-sizing") != "border-box"
-        w += parseFloat(computed.getPropertyValue("border-left-width")) + parseFloat(computed.getPropertyValue("border-right-width")) + parseFloat(computed.getPropertyValue("padding-left")) + parseFloat(computed.getPropertyValue("padding-right"))
-      w
-    else
-      el.outerWidth true
-
   for elm in @
     ((elm, padding_bottom, parent_top, parent_height, top, height, el_float, detached) ->
       return if elm.data "sticky_kit"
       elm.data "sticky_kit", true
-
-      last_scroll_height = doc_height
 
       parent = elm.parent()
       parent = parent.closest(parent_selector) if parent_selector?
@@ -64,10 +43,6 @@ $.fn.stick_in_parent = (opts={}) ->
 
       recalc = ->
         return if detached
-        win_height = win.height();
-        doc_height = doc.height();
-        last_scroll_height = doc_height
-
         border_top = parseInt parent.css("border-top-width"), 10
         padding_top = parseInt parent.css("padding-top"), 10
         padding_bottom = parseInt parent.css("padding-bottom"), 10
@@ -98,7 +73,7 @@ $.fn.stick_in_parent = (opts={}) ->
 
         el_float = elm.css "float"
         spacer.css({
-          width: outer_width elm
+          width: if elm[0].getBoundingClientRect().width then elm[0].getBoundingClientRect().width else elm.outerWidth true
           height: height
           display: elm.css "display"
           "vertical-align": elm.css "vertical-align"
@@ -118,18 +93,11 @@ $.fn.stick_in_parent = (opts={}) ->
 
       tick = ->
         return if detached
-        recalced = false
-
         if recalc_counter?
           recalc_counter -= 1
           if recalc_counter <= 0
             recalc_counter = recalc_every
             recalc()
-            recalced = true
-
-        if !recalced && doc_height != last_scroll_height
-          recalc()
-          recalced = true
 
         scroll = win.scrollTop()
         if last_pos?
@@ -169,6 +137,7 @@ $.fn.stick_in_parent = (opts={}) ->
 
           # updated offset
           if inner_scrolling
+            win_height = win.height()
             if height + offset_top > win_height # bigger than viewport
               unless bottomed
                 offset -= delta
@@ -190,7 +159,7 @@ $.fn.stick_in_parent = (opts={}) ->
             }
 
             css.width = if elm.css("box-sizing") == "border-box"
-              elm.outerWidth() + "px"
+              if elm[0].getBoundingClientRect().width then elm[0].getBoundingClientRect().width + "px" else elm.outerWidth() + "px"
             else
               elm.width() + "px"
 
@@ -265,5 +234,3 @@ $.fn.stick_in_parent = (opts={}) ->
 
     ) $ elm
   @
-
-
